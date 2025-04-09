@@ -1,5 +1,5 @@
-import { getTid } from '@core/middleware/app.context';
 import { Injectable } from '@nestjs/common';
+import { ClsService } from 'nestjs-cls';
 import path from 'path';
 import { Logger as TypeOrmLogger } from 'typeorm';
 import { createLogger, format, transports } from 'winston';
@@ -9,7 +9,7 @@ import DailyRotateFile from 'winston-daily-rotate-file';
 export class LoggerService implements TypeOrmLogger {
     private logger;
 
-    constructor() {
+    constructor(private readonly cls: ClsService) {
         const nodeEnv = process.env.NODE_ENV;
         const isLocalEnv = ['local', 'dev', undefined].includes(nodeEnv);
         const level = isLocalEnv ? 'debug' : 'info';
@@ -54,7 +54,7 @@ export class LoggerService implements TypeOrmLogger {
 
     private addContext(context?: any) {
         try {
-            const tid = getTid();
+            const tid = this.cls.getId();
             return { ...context, tid };
         } catch {
             return context;
@@ -64,7 +64,7 @@ export class LoggerService implements TypeOrmLogger {
         this.logger.info(message, this.addContext(context));
     }
 
-    error(message: string, trace: string, context?: any) {
+    error(message: string, trace?: string, context?: any) {
         this.logger.error(message, { trace, ...this.addContext(context) });
     }
 

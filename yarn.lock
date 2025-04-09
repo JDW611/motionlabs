@@ -697,6 +697,16 @@
   resolved "https://registry.yarnpkg.com/@microsoft/tsdoc/-/tsdoc-0.15.0.tgz#f29a55df17cb6e87cfbabce33ff6a14a9f85076d"
   integrity sha512-HZpPoABogPvjeJOdzCOSJsXeL/SMCBgBZMVC3X3d7YYp2gf31MfxhUoYUNwf1ERPJOnQc0wkFn9trqI6ZEdZuA==
 
+"@nestjs-cls/transactional-adapter-typeorm@^1.2.18":
+  version "1.2.18"
+  resolved "https://registry.yarnpkg.com/@nestjs-cls/transactional-adapter-typeorm/-/transactional-adapter-typeorm-1.2.18.tgz#75382a8c36a6bf84dc4a03787c736f6da2f6a25a"
+  integrity sha512-Sfo8hjO1tyDcMOInLo3HhIpkWiXQJPcpmtE9tizQ3kdvI0/6WYqLBD+ix8nskxURgUn2T0gTXeG7ZKwskQMMcA==
+
+"@nestjs-cls/transactional@^2.6.1":
+  version "2.6.1"
+  resolved "https://registry.yarnpkg.com/@nestjs-cls/transactional/-/transactional-2.6.1.tgz#ed302a1a89189857c6c1a2869ecc7aa43bd443d9"
+  integrity sha512-vA2ED3Tu+5cZ9/kgCa8Bjy/nBP+OYils0njbDDoYh5p4cA/waIa14tcRRVxLrnv3UGJ+zL8SfgVL1w2EzO8NjQ==
+
 "@nestjs/cli@9.2.0":
   version "9.2.0"
   resolved "https://registry.yarnpkg.com/@nestjs/cli/-/cli-9.2.0.tgz#d174f54d7aaa6695b8e413093e3d18367bc8bec7"
@@ -4095,6 +4105,11 @@ nest-winston@1.9.7:
   integrity sha512-pTTgImRgv7urojsDvaTlenAjyJNLj7ywamfjzrhWKhLhp80AKLYNwf103dVHeqZWe+nzp/vd9DGRs/UN/YadOQ==
   dependencies:
     fast-safe-stringify "^2.1.1"
+
+nestjs-cls@^5.4.2:
+  version "5.4.2"
+  resolved "https://registry.yarnpkg.com/nestjs-cls/-/nestjs-cls-5.4.2.tgz#4b0cc705e5e4d6d46d2c59fc309e5bf5d3c89f98"
+  integrity sha512-KQPOhD7ya82gSEc+XDwFKERPMaWK95bzV4E2pLmx8oC1hfMNuVc4dkWmEKJiu+o0hCWP/v51iWNgOGHKnJ9Raw==
 
 node-abort-controller@^3.0.1:
   version "3.1.1"

@@ -26,7 +26,8 @@
             "@shared/*": ["src/shared/*"],
             "@modules/*": ["src/modules/*"],
             "@config/*": ["src/config/*"],
-            "@common/*": ["src/common/*"]
+            "@common/*": ["src/common/*"],
+            "@domain/*": ["src/domain/*"]
         }
     },
     "exclude": ["node_modules", "dist"]

@@ -1,30 +1,29 @@
-import { Inject } from '@nestjs/common';
 import { GenericRepository } from '../generic/generic.repository';
 import { RootEntity } from '../generic/root.entity';
-import { TransactionManager } from './transaction-manager';
-import { EntityTarget, FindOneOptions, Repository } from 'typeorm';
+import { FindOneOptions, Repository } from 'typeorm';
 
 export abstract class GenericTypeOrmRepository<T extends RootEntity>
     implements GenericRepository<T>
 {
-    constructor(@Inject(TransactionManager) private readonly txManger: TransactionManager) {}
+    constructor(protected readonly repository: Repository<T>) {}
 
-    abstract getName(): EntityTarget<T>;
+    protected getRepository(): Repository<T> {
+        return this.repository;
+    }
 
-    async save(t: T | T[]): Promise<T[]> {
-        return this.getRepository().save(Array.isArray(t) ? t : [t]);
+    async save(t: T): Promise<T>;
+    async save(t: T[]): Promise<T[]>;
+    async save(t: T | T[]): Promise<T | T[]> {
+        const result = await this.repository.save(Array.isArray(t) ? t : [t]);
+        return Array.isArray(t) ? result : result[0];
     }
 
     async findById(id: number): Promise<T | null> {
         const findOption: FindOneOptions = { where: { id } };
-        return this.getRepository().findOne(findOption);
+        return this.repository.findOne(findOption);
     }
 
     async remove(t: T | T[]): Promise<void> {
-        await this.getRepository().remove(Array.isArray(t) ? t : [t]);
-    }
-
-    protected getRepository(): Repository<T> {
-        return this.txManger.getEntityManager().getRepository(this.getName());
+        await this.repository.remove(Array.isArray(t) ? t : [t]);
     }
 }
