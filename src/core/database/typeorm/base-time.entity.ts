@@ -8,13 +8,13 @@ export abstract class BaseTimeEntity extends RootEntity {
     @PrimaryColumn({ type: 'bigint', generated: true, transformer: new BigintTransformer() })
     id: string;
 
-    @CreateDateColumn({ type: 'timestamptz', nullable: false })
+    @CreateDateColumn({ type: 'timestamp', nullable: false })
     createdAt: Date;
 
-    @UpdateDateColumn({ type: 'timestamptz', nullable: false })
+    @UpdateDateColumn({ type: 'timestamp', nullable: false })
     updatedAt: Date;
 
-    @DeleteDateColumn({ type: 'timestamptz', nullable: true })
+    @DeleteDateColumn({ type: 'timestamp', nullable: true })
     deletedAt: Date;
 
     getCreatedAt(): LocalDateTime {
