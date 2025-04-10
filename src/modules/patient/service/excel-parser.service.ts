@@ -26,8 +26,9 @@ export class ExcelParserService {
 
         const totalRows = patientVOs.length;
         const skippedRows = invalidRows.length;
+        const processedRows = totalRows - skippedRows;
 
-        return { validRows, totalRows, skippedRows };
+        return { validRows, totalRows, skippedRows, processedRows };
     }
 
     private convertToPatientVO(row: any): PatientVO {
