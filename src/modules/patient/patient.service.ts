@@ -4,6 +4,10 @@ import {
     IPatientRepository,
     PatientRepositoryKey,
 } from '@domain/patient/patient-repository.interface';
+import { PatientEntity } from '@domain/patient/patient.entity';
+import { PatientFilterDto } from './dto/request/patient-filter.dto';
+import { PaginationDto } from './dto/request/pagination.dto';
+import { PaginatedResponseDto } from './dto/response/paginated-response.dto';
 
 @Injectable()
 export class PatientService {
@@ -24,5 +28,12 @@ export class PatientService {
             processedRows: processedRows,
             skippedRows: result.skippedRows,
         };
+    }
+
+    async findPatients(
+        filter: PatientFilterDto,
+        pagination: PaginationDto,
+    ): Promise<PaginatedResponseDto<PatientEntity>> {
+        return this.repository.findPatients(filter, pagination);
     }
 }
