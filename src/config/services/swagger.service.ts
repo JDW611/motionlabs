@@ -6,10 +6,9 @@ import { INestApplication } from '@nestjs/common';
 export class SwaggerService {
     setup(app: INestApplication): void {
         const config = new DocumentBuilder()
-            .setTitle('Your API Title')
-            .setDescription('Your API description')
+            .setTitle('Motionlabs 과제테스트')
+            .setDescription('과제테스트를 위한 간단한 api서버')
             .setVersion('1.0')
-            .addTag('your-api-tag')
             .addBearerAuth()
             .build();
 

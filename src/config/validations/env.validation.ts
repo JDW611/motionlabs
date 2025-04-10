@@ -27,9 +27,6 @@ class DatabaseConfigValidation {
 
     @IsBoolean()
     synchronize: boolean;
-
-    @IsBoolean()
-    logging: boolean;
 }
 
 class AppConfigValidation {
@@ -71,7 +68,6 @@ export function validate(config: Record<string, unknown>) {
             password: config.DB_PASSWORD,
             database: config.DB_DATABASE,
             synchronize: config.DB_SYNCHRONIZE,
-            logging: config.DB_LOGGING,
         },
         app: {
             port: parseInt(config.PORT as string, 10),

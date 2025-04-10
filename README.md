@@ -1,73 +1,107 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="200" alt="Nest Logo" /></a>
-</p>
+# Motionlabs 과제테스트
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+## 개요
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+엑셀 파일을 통해 환자 정보를 등록하고 환자 목록을 조회하는 서버 구축
 
-## Description
+## 기술 스택
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+| Name       | Version |
+| ---------- | ------- |
+| NestJS     | 9.2.0   |
+| TypeScript | ^5.5.0  |
+| TypeORM    | 0.3.10  |
+| MySQL      | 8.0.41  |
 
-## Installation
+## 2. 설치 및 실행 방법
+
+### 설치
 
 ```bash
-$ yarn install
+$ git clone https://github.com/JDW611/motionlabs.git
+
+# install
+$ yarn
 ```
 
-## Running the app
+### 환경변수 설정
+
+프로젝트 내에 `.env.local`를 생성합니다.
+
+```.env.local
+# Application
+PORT=3000
+
+# Database
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_USERNAME=root
+DB_PASSWORD=ekdns001
+DB_DATABASE=motionlabs
+DB_SYNCHRONIZE=true # true, 필수
+
+```
+
+### 실행
 
 ```bash
-# development
-$ yarn run start
-
-# watch mode
-$ yarn run start:dev
-
-# production mode
-$ yarn run start:prod
+$ yarn serve
 ```
 
-## Test
+## 3. API 명세
 
-```bash
-# unit tests
-$ yarn run test
+-   swagger 문서
+    > http://localhost:3000/api-docs
 
-# e2e tests
-$ yarn run test:e2e
+## 4. 성능 최적화
 
-# test coverage
-$ yarn run test:cov
-```
+### Excel 중복 및 병합 처리
 
-## Support
+1. 데이터 유효성 검증
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+    - 엑셀 파일에서 파싱된 데이터는 `ExcelParserService`에서 각 행별로 유효성 검증
+    - 이름, 전화번호 등 필수 필드 검증 및 형식 검사 수행
 
-## Stay in touch
+2. 환자 정보 병합 로직
 
-- Author - [Kamil Myśliwiec](https://kamilmysliwiec.com)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+    - 이름과 전화번호를 기준으로 동일 환자 식별 (고유 식별키로 사용)
+    - 차트번호 기반 병합 정책 적용:
+        - 두 레코드 모두 차트번호가 있는 경우: 차트번호가 동일한 경우만 병합
+        - 한 레코드만 차트번호가 있는 경우: 차트번호 정보 유지하며 병합
+        - 두 레코드 모두 차트번호가 없는 경우: 나머지 정보 통합하여 병합
 
-## License
+3. 중복 제거 최적화
+    - `Map` 자료구조를 활용하여 O(1) 시간 복잡도로 중복 검사
+    - 환자 식별키(이름+전화번호)를 기준으로 메모리 내 효율적인 중복 관리
+    - 차트번호 충돌 케이스 별도 처리로 데이터 무결성 보장
 
-Nest is [MIT licensed](LICENSE).
+### 데이터베이스 중복 및 병합 처리
+
+1. 임시 테이블 활용 전략
+
+    - 단일 트랜잭션 내에서 임시 테이블 생성하여 엑셀 데이터 저장
+    - 임시 테이블과 환자 테이블 간 조인 연산으로 효율적인 비교 수행
+
+2. 케이스별 처리 로직
+
+    - 신규 환자 등록
+
+        - [이름, 전화번호] 조합이 DB에 존재하지 않는 경우 → 새 환자로 INSERT
+
+    - 차트번호 업데이트
+
+        - [이름, 전화번호]가 같고 차트번호가 같거나 하나 이상이 NULL인 경우 -> UPDATE
+
+    - 차트번호 충돌 처리
+        - 업데이트 작업 이후 이름과 전화번호는 같지만 차트번호가 같은게 없는 경우 → 새 환자로 INSERT
+
+3. 성능 최적화
+    - 단일 쿼리를 통한 대량 데이터 처리로 DB 라운드트립 최소화
+    - JOIN 기반 비교로 애플리케이션 로직 대신 DB 엔진의 최적화 활용
+    - 트랜잭션 적용으로 데이터 일관성 보장 및 실패 시 롤백 처리
+
+#### 성능
+
+> MacBook Pro 14 M1 pro 32GB 기준
+
+-   전체 소요 시간 : 4.618s
