@@ -126,13 +126,6 @@ export class ExcelParserService {
             return upper.isChartNumberEqual(lower);
         }
 
-        // 위에만 chartNumber가 있고 아래는 없어도 → 병합 OK
-        if (upperHasChartNumber && !lowerHasChartNumber) return true;
-
-        // 둘 다 없음 → 병합 OK
-        if (!upperHasChartNumber && !lowerHasChartNumber) return true;
-
-        // 아래만 chartNumber가 있고 위는 없음 → 병합 x
-        return false;
+        return true;
     }
 }

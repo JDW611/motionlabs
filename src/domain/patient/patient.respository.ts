@@ -67,7 +67,8 @@ export class PatientRepository
                   t.address,
                   t.memo
                 FROM temp_patients t
-                WHERE NOT EXISTS (
+                WHERE t.chart_number IS NULL
+                AND NOT EXISTS (
                   SELECT 1 
                   FROM patients p
                   WHERE p.name = t.name
