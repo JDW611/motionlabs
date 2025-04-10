@@ -45,7 +45,7 @@ export class PatientController {
     })
     @ApiBadRequestResponse({
         status: 400,
-        description: '엑셀 파일 업로드 실패',
+        description: '엑셀 파일 확장자 불일치',
     })
     async uploadPatients(
         @UploadedFile(
