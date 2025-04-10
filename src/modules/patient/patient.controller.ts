@@ -27,7 +27,7 @@ import { ExcelUploadForm } from './schema/upload-excel-form';
 import { UploadExcelResult } from './types/parse-result.type';
 import { ParseResultForm } from './schema/parse-result-form';
 
-@ApiTags('Patients')
+@ApiTags('Patients API')
 @Controller('patients')
 export class PatientController {
     constructor(private readonly patientService: PatientService) {}
