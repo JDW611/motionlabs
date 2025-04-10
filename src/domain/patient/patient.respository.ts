@@ -3,7 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { PatientEntity } from './patient.entity';
 import { IPatientRepository } from './patient-repository.interface';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like, FindManyOptions, FindOptionsWhere } from 'typeorm';
+import { Repository, Like, FindManyOptions, FindOptionsWhere, DataSource } from 'typeorm';
 import { PatientVO } from '@modules/patient/vo/patient.vo';
 import { PatientFilterDto } from '@modules/patient/dto/request/patient-filter.dto';
 import { PaginationDto } from '@modules/patient/dto/request/pagination.dto';
@@ -17,78 +17,114 @@ export class PatientRepository
     constructor(
         @InjectRepository(PatientEntity)
         protected readonly repository: Repository<PatientEntity>,
+        private readonly dataSource: DataSource,
     ) {
         super(repository);
     }
 
-    async upsert(excelRows: PatientVO[]): Promise<number> {
-        const keyBy = (name: string, phone: string) => `${name}_${phone}`;
-        const keySet = new Set<string>();
+    async upsert(excelRows: PatientVO[]): Promise<void> {
+        const queryRunner = this.dataSource.createQueryRunner();
+        await queryRunner.connect();
+        await queryRunner.startTransaction();
 
-        for (const row of excelRows) {
-            keySet.add(keyBy(row.name, row.phoneNumber));
-        }
+        try {
+            // 1. 임시 테이블 생성
+            await queryRunner.query(`
+            CREATE TEMPORARY TABLE temp_patients (
+              name VARCHAR(255) NOT NULL,
+              phone_number VARCHAR(11) NOT NULL,
+              chart_number VARCHAR(255),
+              rrn VARCHAR(8),
+              address VARCHAR(255),
+              memo VARCHAR(255)
+            )
+          `);
 
-        const existingPatients = await this.repository.find({
-            where: Array.from(keySet).map(key => {
-                const [name, phone] = key.split('_');
-                return { name, phoneNumber: phone };
-            }),
-        });
-
-        const existingMap = new Map(existingPatients.map(e => [keyBy(e.name, e.phoneNumber), e]));
-
-        let inserted = 0;
-        let updated = 0;
-
-        for (const excelRow of excelRows) {
-            const key = keyBy(excelRow.name, excelRow.phoneNumber);
-            const existing = existingMap.get(key);
-
-            if (existing) {
-                const hasExcelChart = !!excelRow.chartNumber;
-                const hasDbChart = !!existing.chartNumber;
-
-                // 병합 정책: 차트번호가 다르면 새 insert
-                if (hasExcelChart && hasDbChart && excelRow.chartNumber !== existing.chartNumber) {
-                    await this.repository.insert({
-                        name: excelRow.name,
-                        phoneNumber: excelRow.phoneNumber,
-                        rrn: excelRow.rrn,
-                        chartNumber: excelRow.chartNumber,
-                        address: excelRow.address,
-                        memo: excelRow.memo,
-                    });
-                    inserted += 1;
-                    continue;
-                }
-
-                // DB에 차트 없음 → 엑셀에 있으면 덮어쓰기
-                if (hasExcelChart && !hasDbChart) {
-                    existing.chartNumber = excelRow.chartNumber;
-                }
-
-                // 공통 병합
-                existing.rrn = excelRow.rrn ?? existing.rrn;
-                existing.address = excelRow.address ?? existing.address;
-                existing.memo = excelRow.memo ?? existing.memo;
-
-                await this.repository.save(existing);
-                updated += 1;
-            } else {
-                await this.repository.insert({
-                    name: excelRow.name,
-                    phoneNumber: excelRow.phoneNumber,
-                    rrn: excelRow.rrn,
-                    chartNumber: excelRow.chartNumber,
-                    address: excelRow.address,
-                    memo: excelRow.memo,
-                });
-                inserted += 1;
+            // 2. 임시 테이블에 엑셀 데이터 삽입
+            for (const row of excelRows) {
+                await queryRunner.query(
+                    `INSERT INTO temp_patients (name, phone_number, chart_number, rrn, address, memo) 
+               VALUES (?, ?, ?, ?, ?, ?)`,
+                    [
+                        row.name,
+                        row.phoneNumber,
+                        row.chartNumber || null,
+                        row.rrn || null,
+                        row.address || null,
+                        row.memo || null,
+                    ],
+                );
             }
-        }
 
-        return inserted + updated;
+            // 3. 신규 환자 삽입 + 이름/전화번호 같은 케이스 제외 삽입
+            await queryRunner.query(`
+                INSERT INTO patients (name, phone_number, chart_number, rrn, address, memo)
+                SELECT 
+                  t.name,
+                  t.phone_number,
+                  t.chart_number,
+                  t.rrn,
+                  t.address,
+                  t.memo
+                FROM temp_patients t
+                WHERE NOT EXISTS (
+                  SELECT 1 
+                  FROM patients p
+                  WHERE p.name = t.name
+                    AND p.phone_number = t.phone_number
+                    
+                );
+              `);
+            //AND (t.chart_number IS NULL OR p.chart_number = t.chart_number OR p.chart_number IS NULL)
+            console.log('--------------------------------1');
+
+            // 4. 업데이트: 이름+전화번호가 같고 차트번호가 같거나 하나 이상이 NULL인 케이스
+            await queryRunner.query(`
+                UPDATE patients p
+                JOIN temp_patients t
+                        ON p.name = t.name
+                    AND p.phone_number = t.phone_number
+                    AND (p.chart_number = t.chart_number OR p.chart_number IS NULL OR t.chart_number IS NULL)
+                SET
+                    p.chart_number = CASE
+                        WHEN p.chart_number IS NULL AND t.chart_number IS NOT NULL
+                            THEN t.chart_number
+                        ELSE p.chart_number
+                    END,
+                    p.rrn = COALESCE(t.rrn, p.rrn),
+                    p.address = COALESCE(t.address, p.address),
+                    p.memo = COALESCE(t.memo, p.memo)
+                WHERE
+                (p.chart_number IS NULL
+                OR t.chart_number IS NULL
+                OR p.chart_number = t.chart_number);
+              `);
+
+            // 5. 이름+전화번호가 같고 차트번호가 같은게 없는 경우 삽입
+            await queryRunner.query(`
+                INSERT INTO patients (name, phone_number, chart_number, rrn, address, memo)
+                SELECT t.name, t.phone_number, t.chart_number, t.rrn, t.address, t.memo
+                FROM temp_patients t
+                WHERE t.chart_number IS NOT NULL
+                  AND NOT EXISTS (
+                    SELECT 1
+                    FROM patients p
+                    WHERE p.name = t.name
+                      AND p.phone_number = t.phone_number
+                      AND p.chart_number = t.chart_number
+                  );
+                `);
+
+            // 6. 임시 테이블 삭제
+            await queryRunner.query(`DROP TEMPORARY TABLE IF EXISTS temp_patients`);
+
+            await queryRunner.commitTransaction();
+        } catch (err) {
+            await queryRunner.rollbackTransaction();
+            throw err;
+        } finally {
+            await queryRunner.release();
+        }
     }
 
     async findPatients(
