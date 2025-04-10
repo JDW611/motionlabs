@@ -3,8 +3,12 @@ import { Injectable } from '@nestjs/common';
 import { PatientEntity } from './patient.entity';
 import { IPatientRepository } from './patient-repository.interface';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, Like, FindManyOptions, FindOptionsWhere } from 'typeorm';
 import { PatientVO } from '@modules/patient/vo/patient.vo';
+import { PatientFilterDto } from '@modules/patient/dto/request/patient-filter.dto';
+import { PaginationDto } from '@modules/patient/dto/request/pagination.dto';
+import { PaginatedResponseDto } from '@modules/patient/dto/response/paginated-response.dto';
+
 @Injectable()
 export class PatientRepository
     extends GenericTypeOrmRepository<PatientEntity>
@@ -80,5 +84,42 @@ export class PatientRepository
         const processedRows = inserted + updated;
 
         return processedRows;
+    }
+
+    async findPatients(
+        filter: PatientFilterDto,
+        pagination: PaginationDto,
+    ): Promise<PaginatedResponseDto<PatientEntity>> {
+        const where: FindOptionsWhere<PatientEntity> = {};
+
+        if (filter.name) {
+            where.name = Like(`%${filter.name}%`);
+        }
+
+        if (filter.phoneNumber) {
+            where.phoneNumber = Like(`%${filter.phoneNumber}%`);
+        }
+
+        if (filter.chartNumber) {
+            where.chartNumber = Like(`%${filter.chartNumber}%`);
+        }
+
+        const options: FindManyOptions<PatientEntity> = {
+            where,
+            skip: (pagination.page - 1) * pagination.count,
+            take: pagination.count,
+            order: {
+                id: 'DESC',
+            },
+        };
+
+        const [items, total] = await this.repository.findAndCount(options);
+
+        return {
+            total,
+            page: pagination.page,
+            count: pagination.count,
+            data: items,
+        };
     }
 }
