@@ -2,11 +2,10 @@ import { CreateDateColumn, DeleteDateColumn, PrimaryColumn, UpdateDateColumn } f
 import { RootEntity } from '../generic/root.entity';
 import { LocalDateTime } from '@js-joda/core';
 import { DateTimeUtil } from '@common/utils/date-time.util';
-import { BigintTransformer } from './transformer';
 
 export abstract class BaseTimeEntity extends RootEntity {
-    @PrimaryColumn({ type: 'bigint', generated: true, transformer: new BigintTransformer() })
-    id: string;
+    @PrimaryColumn({ type: 'int', generated: true })
+    id: number;
 
     @CreateDateColumn({ type: 'timestamp', nullable: false })
     createdAt: Date;
