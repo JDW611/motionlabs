@@ -2,7 +2,7 @@ export class PatientVO {
     constructor(
         readonly name?: string,
         readonly phoneNumber?: string,
-        readonly identifyNumber?: string,
+        readonly rrn?: string,
         readonly chartNumber?: string,
         readonly address?: string,
         readonly memo?: string,
@@ -22,7 +22,7 @@ export class PatientVO {
         return new PatientVO(
             this.name,
             this.phoneNumber,
-            this.identifyNumber || other.identifyNumber,
+            this.rrn || other.rrn,
             this.chartNumber || other.chartNumber,
             this.address || other.address,
             this.memo || other.memo,

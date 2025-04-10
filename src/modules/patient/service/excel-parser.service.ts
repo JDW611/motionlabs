@@ -24,7 +24,10 @@ export class ExcelParserService {
             }
         }
 
-        return { validRows, invalidRows };
+        const totalRows = patientVOs.length;
+        const skippedRows = invalidRows.length;
+
+        return { validRows, totalRows, skippedRows };
     }
 
     private convertToPatientVO(row: any): PatientVO {
@@ -64,7 +67,7 @@ export class ExcelParserService {
         return (
             this.isValidName(row.name) &&
             this.isValidPhoneNumber(row.phoneNumber) &&
-            this.isValidIdentifyNumber(row.identifyNumber) &&
+            this.isValidIdentifyNumber(row.rrn) &&
             this.isValidOptionalField(row.chartNumber) &&
             this.isValidOptionalField(row.address) &&
             this.isValidOptionalField(row.memo)
@@ -75,7 +78,7 @@ export class ExcelParserService {
         return new PatientVO(
             row.name.trim(),
             row.phoneNumber.replace(/-/g, ''),
-            this.cleanIdentifyNumber(row.identifyNumber),
+            this.cleanIdentifyNumber(row.rrn),
             row.chartNumber?.trim(),
             row.address?.trim(),
             row.memo?.trim(),
@@ -91,20 +94,22 @@ export class ExcelParserService {
         return /^\d{11}$/.test(phone.replace(/-/g, '')) || /^\d{3}-\d{4}-\d{4}$/.test(phone);
     }
 
-    private isValidIdentifyNumber(id?: string): boolean {
-        if (!id) return false;
+    private isValidIdentifyNumber(rrn?: string): boolean {
+        if (!rrn) return false;
         return (
-            /^\d{6}$/.test(id) ||
-            /^\d{6}[1-4]$/.test(id) ||
-            /^\d{6}-?[1-4]$/.test(id) ||
-            /^\d{6}-?[1-4]\*{6}$/.test(id) ||
-            /^\d{6}-?[1-4]\d{6}$/.test(id)
+            /^\d{6}$/.test(rrn) || // 6자리 숫자 (생년월일)
+            /^\d{7,}$/.test(rrn) || // 7자리 이상 숫자 (생년월일 + 성별식별값 이상)
+            /^\d{6}-\d{1,}$/.test(rrn) || // 하이픈 포함 형식
+            /^\d{6}-?\d{1,}\*+$/.test(rrn) // 뒷자리가 * 마스킹된 경우
         );
     }
 
     private cleanIdentifyNumber(id: string): string {
-        const matched = id.match(/^\d{6}-?[1-4]/);
-        return matched ? matched[0].replace('-', '') : '0000000';
+        const digitsOnly = id.replace(/\D/g, ''); // 숫자만 추출
+        const birthDate = digitsOnly.slice(0, 6);
+        const genderDigit = digitsOnly.length >= 7 ? digitsOnly.charAt(6) : '0';
+
+        return `${birthDate}-${genderDigit}`;
     }
 
     private isValidOptionalField(value?: string): boolean {
