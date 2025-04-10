@@ -56,12 +56,9 @@ export class ResponseEntity<T> {
 
         return this.isSuccess
             ? {
-                  code: HttpStatus.OK,
-                  message: 'OK',
-                  result: this._data,
+                  ...this._data,
               }
             : {
-                  code: this.exception?.status || HttpStatus.INTERNAL_SERVER_ERROR,
                   message: exception?.message,
                   detail: showDetail ? exception?.detail : undefined,
               };

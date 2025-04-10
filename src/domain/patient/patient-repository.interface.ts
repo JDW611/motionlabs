@@ -8,7 +8,7 @@ import { PaginatedResponseDto } from '@modules/patient/dto/response/paginated-re
 export const PatientRepositoryKey = 'PatientRepositoryKey';
 
 export interface IPatientRepository extends GenericRepository<PatientEntity> {
-    upsert(patient: PatientVO[]): Promise<number>;
+    upsert(patient: PatientVO[]): Promise<void>;
     findPatients(
         filter: PatientFilterDto,
         pagination: PaginationDto,

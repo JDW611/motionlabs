@@ -21,11 +21,11 @@ export class PatientService {
 
         const mergedPatients = this.excelParserService.mergeRows(result.validRows);
 
-        const processedRows = await this.repository.upsert(mergedPatients);
+        await this.repository.upsert(mergedPatients);
 
         return {
             totalRows: result.totalRows,
-            processedRows: processedRows,
+            processedRows: result.processedRows,
             skippedRows: result.skippedRows,
         };
     }
