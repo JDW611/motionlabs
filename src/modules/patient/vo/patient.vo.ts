@@ -20,12 +20,12 @@ export class PatientVO {
 
     mergeWith(other: PatientVO): PatientVO {
         return new PatientVO(
-            this.name,
-            this.phoneNumber,
-            this.rrn || other.rrn,
-            this.chartNumber || other.chartNumber,
-            this.address || other.address,
-            this.memo || other.memo,
+            other.name || this.name,
+            other.phoneNumber || this.phoneNumber,
+            other.rrn || this.rrn,
+            other.chartNumber || this.chartNumber,
+            other.address || this.address,
+            other.memo || this.memo,
         );
     }
 
