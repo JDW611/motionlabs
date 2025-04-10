@@ -7,7 +7,6 @@ export interface DatabaseConfig {
     password: string;
     database: string;
     synchronize: boolean;
-    logging: boolean;
 }
 
 export interface AppConfig {
