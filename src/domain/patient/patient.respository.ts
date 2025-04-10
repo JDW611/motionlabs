@@ -75,8 +75,6 @@ export class PatientRepository
                     
                 );
               `);
-            //AND (t.chart_number IS NULL OR p.chart_number = t.chart_number OR p.chart_number IS NULL)
-            console.log('--------------------------------1');
 
             // 4. 업데이트: 이름+전화번호가 같고 차트번호가 같거나 하나 이상이 NULL인 케이스
             await queryRunner.query(`
