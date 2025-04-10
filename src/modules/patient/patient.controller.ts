@@ -12,7 +12,7 @@ import { PaginatedResponseDto } from './dto/response/paginated-response.dto';
 export class PatientController {
     constructor(private readonly patientService: PatientService) {}
 
-    @Post('upload')
+    @Post()
     @ApiOperation({ summary: 'Excel 파일 업로드를 통한 환자 등록' })
     @UseInterceptors(FileInterceptor('file'))
     @ApiConsumes('multipart/form-data')
