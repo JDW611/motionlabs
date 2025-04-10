@@ -22,33 +22,35 @@ export class PatientRepository
     }
 
     async upsert(excelRows: PatientVO[]): Promise<number> {
+        const keyBy = (name: string, phone: string) => `${name}_${phone}`;
+        const keySet = new Set<string>();
+
+        for (const row of excelRows) {
+            keySet.add(keyBy(row.name, row.phoneNumber));
+        }
+
+        const existingPatients = await this.repository.find({
+            where: Array.from(keySet).map(key => {
+                const [name, phone] = key.split('_');
+                return { name, phoneNumber: phone };
+            }),
+        });
+
+        const existingMap = new Map(existingPatients.map(e => [keyBy(e.name, e.phoneNumber), e]));
+
         let inserted = 0;
         let updated = 0;
 
         for (const excelRow of excelRows) {
-            const existing = await this.repository.findOne({
-                where: {
-                    name: excelRow.name,
-                    phoneNumber: excelRow.phoneNumber,
-                },
-            });
+            const key = keyBy(excelRow.name, excelRow.phoneNumber);
+            const existing = existingMap.get(key);
 
             if (existing) {
-                const excelRowHasChartNumber = excelRow.hasChartNumber();
-                const dbHasChartNumber =
-                    existing.chartNumber !== null && existing.chartNumber !== undefined;
+                const hasExcelChart = !!excelRow.chartNumber;
+                const hasDbChart = !!existing.chartNumber;
 
-                // 병합 정책: chart 없는 DB row에 chart 있는 엑셀 row가 오면 덮어쓰기
-                if (excelRowHasChartNumber && !dbHasChartNumber) {
-                    existing.chartNumber = excelRow.chartNumber;
-                }
-
-                if (
-                    excelRowHasChartNumber &&
-                    dbHasChartNumber &&
-                    excelRow.chartNumber !== existing.chartNumber
-                ) {
-                    // chart 다르면 서로 다른 환자로 간주하고 insert 처리
+                // 병합 정책: 차트번호가 다르면 새 insert
+                if (hasExcelChart && hasDbChart && excelRow.chartNumber !== existing.chartNumber) {
                     await this.repository.insert({
                         name: excelRow.name,
                         phoneNumber: excelRow.phoneNumber,
@@ -59,6 +61,11 @@ export class PatientRepository
                     });
                     inserted += 1;
                     continue;
+                }
+
+                // DB에 차트 없음 → 엑셀에 있으면 덮어쓰기
+                if (hasExcelChart && !hasDbChart) {
+                    existing.chartNumber = excelRow.chartNumber;
                 }
 
                 // 공통 병합
@@ -81,9 +88,7 @@ export class PatientRepository
             }
         }
 
-        const processedRows = inserted + updated;
-
-        return processedRows;
+        return inserted + updated;
     }
 
     async findPatients(
