@@ -1,4 +1,4 @@
-export class PatientVO {
+export class PatientRecord {
     constructor(
         readonly name?: string,
         readonly phoneNumber?: string,
@@ -8,18 +8,12 @@ export class PatientVO {
         readonly memo?: string,
     ) {}
 
-    getMergeKey(): string {
-        return this.chartNumber
-            ? `${this.chartNumber}-${this.name}-${this.phoneNumber}`
-            : `__NOCHART__-${this.name}-${this.phoneNumber}`;
-    }
-
     getIdentityKey(): string {
         return `${this.name}-${this.phoneNumber}`;
     }
 
-    mergeWith(other: PatientVO): PatientVO {
-        return new PatientVO(
+    mergeWith(other: PatientRecord): PatientRecord {
+        return new PatientRecord(
             other.name || this.name,
             other.phoneNumber || this.phoneNumber,
             other.rrn || this.rrn,
@@ -29,7 +23,7 @@ export class PatientVO {
         );
     }
 
-    isChartNumberEqual(other: PatientVO): boolean {
+    isChartNumberEqual(other: PatientRecord): boolean {
         return this.chartNumber === other.chartNumber;
     }
 
