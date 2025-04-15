@@ -4,7 +4,7 @@ import { PatientEntity } from './patient.entity';
 import { IPatientRepository } from './patient-repository.interface';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like, FindManyOptions, FindOptionsWhere, DataSource } from 'typeorm';
-import { PatientVO } from '@modules/patient/vo/patient.vo';
+import { PatientRecord } from '@domain/patient/patient-record';
 import { PatientFilterDto } from '@modules/patient/dto/request/patient-filter.dto';
 import { PaginationDto } from '@modules/patient/dto/request/pagination.dto';
 import { PaginatedResponseDto } from '@modules/patient/dto/response/paginated-response.dto';
@@ -22,7 +22,7 @@ export class PatientRepository
         super(repository);
     }
 
-    async upsert(excelRows: PatientVO[]): Promise<void> {
+    async upsert(excelRows: PatientRecord[]): Promise<void> {
         const queryRunner = this.dataSource.createQueryRunner();
         await queryRunner.connect();
         await queryRunner.startTransaction();
@@ -40,44 +40,23 @@ export class PatientRepository
             )
           `);
 
-            // 2. 임시 테이블에 엑셀 데이터 삽입
-            for (const row of excelRows) {
-                await queryRunner.query(
-                    `INSERT INTO temp_patients (name, phone_number, chart_number, rrn, address, memo) 
-               VALUES (?, ?, ?, ?, ?, ?)`,
-                    [
-                        row.name,
-                        row.phoneNumber,
-                        row.chartNumber || null,
-                        row.rrn || null,
-                        row.address || null,
-                        row.memo || null,
-                    ],
-                );
-            }
+            // 2. 임시 테이블에 데이터 삽입
+            const placeholders = excelRows.map(() => '(?, ?, ?, ?, ?, ?)').join(', ');
+            const values = excelRows.flatMap(row => [
+                row.name,
+                row.phoneNumber,
+                row.chartNumber || null,
+                row.rrn || null,
+                row.address || null,
+                row.memo || null,
+            ]);
+            await queryRunner.query(
+                `INSERT INTO temp_patients (name, phone_number, chart_number, rrn, address, memo)
+                     VALUES ${placeholders}`,
+                values,
+            );
 
-            // 3. 신규 환자 삽입 + 이름/전화번호 같은 케이스 제외 삽입
-            await queryRunner.query(`
-                INSERT INTO patients (name, phone_number, chart_number, rrn, address, memo)
-                SELECT 
-                  t.name,
-                  t.phone_number,
-                  t.chart_number,
-                  t.rrn,
-                  t.address,
-                  t.memo
-                FROM temp_patients t
-                WHERE t.chart_number IS NULL
-                AND NOT EXISTS (
-                  SELECT 1 
-                  FROM patients p
-                  WHERE p.name = t.name
-                    AND p.phone_number = t.phone_number
-                    
-                );
-              `);
-
-            // 4. 업데이트: 이름+전화번호가 같고 차트번호가 같거나 하나 이상이 NULL인 케이스
+            // 3. 업데이트: 이름+전화번호가 같고 차트번호가 같거나 하나 이상이 NULL인 케이스
             await queryRunner.query(`
                 UPDATE patients p
                 JOIN temp_patients t
@@ -99,22 +78,25 @@ export class PatientRepository
                 OR p.chart_number = t.chart_number);
               `);
 
-            // 5. 이름+전화번호가 같고 차트번호가 같은게 없는 경우 삽입
+            // 4. 신규 환자 삽입: 임시테이블(temp_patients)에서 patients 테이블과 조인하여,
+            //    업데이트가 진행된 행을 제외한 나머지 row를 신규 환자로 삽입한다.
             await queryRunner.query(`
                 INSERT INTO patients (name, phone_number, chart_number, rrn, address, memo)
-                SELECT t.name, t.phone_number, t.chart_number, t.rrn, t.address, t.memo
+                SELECT t.name,
+                       t.phone_number,
+                       t.chart_number,
+                       t.rrn,
+                       t.address,
+                       t.memo
                 FROM temp_patients t
-                WHERE t.chart_number IS NOT NULL
-                  AND NOT EXISTS (
-                    SELECT 1
-                    FROM patients p
-                    WHERE p.name = t.name
-                      AND p.phone_number = t.phone_number
-                      AND p.chart_number = t.chart_number
-                  );
-                `);
+                LEFT JOIN patients p
+                  ON p.name = t.name
+                 AND p.phone_number = t.phone_number
+                 AND (p.chart_number = t.chart_number OR p.chart_number IS NULL OR t.chart_number IS NULL)
+                WHERE p.name IS NULL;
+            `);
 
-            // 6. 임시 테이블 삭제
+            // 5. 임시 테이블 삭제
             await queryRunner.query(`DROP TEMPORARY TABLE IF EXISTS temp_patients`);
 
             await queryRunner.commitTransaction();
