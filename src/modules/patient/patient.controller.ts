@@ -23,9 +23,9 @@ import { PaginationDto } from './dto/request/pagination.dto';
 import { PatientFilterDto } from './dto/request/patient-filter.dto';
 import { PatientResponseDto } from './dto/response/patient-response.dto';
 import { PaginatedResponseDto } from './dto/response/paginated-response.dto';
-import { ExcelUploadForm } from './schema/upload-excel-form';
+import { UploadExcelDto } from './dto/response/upload-excel.dto';
 import { UploadExcelResult } from './types/parse-result.type';
-import { ParseResultForm } from './schema/parse-result-form';
+import { UploadExcelResultDto } from './dto/response/upload-excel-result.dto';
 
 @ApiTags('Patients API')
 @Controller('patients')
@@ -39,9 +39,9 @@ export class PatientController {
     })
     @UseInterceptors(FileInterceptor('file'))
     @ApiConsumes('multipart/form-data')
-    @ApiBody({ type: ExcelUploadForm })
+    @ApiBody({ type: UploadExcelDto })
     @ApiCreatedResponse({
-        type: () => ParseResultForm,
+        type: () => UploadExcelResultDto,
     })
     @ApiBadRequestResponse({
         status: 400,

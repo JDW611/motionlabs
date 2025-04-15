@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 
-export class ParseResultForm {
+export class UploadExcelResultDto {
     @ApiProperty({
         description: '총 행 수',
         example: 50000,
