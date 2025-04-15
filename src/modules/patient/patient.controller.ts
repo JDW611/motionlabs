@@ -18,7 +18,7 @@ import {
     ApiCreatedResponse,
     ApiBadRequestResponse,
 } from '@nestjs/swagger';
-import { PatientService } from './patient.service';
+import { PatientService } from './service/patient.service';
 import { PaginationDto } from './dto/request/pagination.dto';
 import { PatientFilterDto } from './dto/request/patient-filter.dto';
 import { PatientResponseDto } from './dto/response/patient-response.dto';

@@ -1,13 +1,13 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { ExcelParserService } from './service/excel-parser.service';
+import { ExcelParserService } from './excel-parser.service';
 import {
     IPatientRepository,
     PatientRepositoryKey,
 } from '@domain/patient/patient-repository.interface';
 import { PatientEntity } from '@domain/patient/patient.entity';
-import { PatientFilterDto } from './dto/request/patient-filter.dto';
-import { PaginationDto } from './dto/request/pagination.dto';
-import { PaginatedResponseDto } from './dto/response/paginated-response.dto';
+import { PatientFilterDto } from '../dto/request/patient-filter.dto';
+import { PaginationDto } from '../dto/request/pagination.dto';
+import { PaginatedResponseDto } from '../dto/response/paginated-response.dto';
 
 @Injectable()
 export class PatientService {
