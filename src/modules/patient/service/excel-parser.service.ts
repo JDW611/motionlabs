@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { PatientVO } from '../vo/patient.vo';
+import { PatientRecord } from '../../../domain/patient/patient-record';
 import { ParseResult } from '../types/parse-result.type';
 import * as XLSX from 'xlsx';
 
@@ -12,8 +12,8 @@ export class ExcelParserService {
 
         const patientVOs = rows.map(row => this.convertToPatientVO(row));
 
-        const validRows: PatientVO[] = [];
-        const invalidRows: PatientVO[] = [];
+        const validRows: PatientRecord[] = [];
+        const invalidRows: PatientRecord[] = [];
 
         for (const row of patientVOs) {
             if (this.isValid(row)) {
@@ -31,8 +31,8 @@ export class ExcelParserService {
         return { validRows, totalRows, skippedRows, processedRows };
     }
 
-    private convertToPatientVO(row: any): PatientVO {
-        return new PatientVO(
+    private convertToPatientVO(row: any): PatientRecord {
+        return new PatientRecord(
             row['이름']?.toString() || '',
             row['전화번호']?.toString() || '',
             row['주민등록번호']?.toString() || '',
@@ -42,29 +42,66 @@ export class ExcelParserService {
         );
     }
 
-    mergeRows(rows: PatientVO[]): PatientVO[] {
-        const result: PatientVO[] = [];
-        const map = new Map<string, { row: PatientVO; index: number }>();
+    mergeRows(rows: PatientRecord[]): PatientRecord[] {
+        const groupMap = new Map<string, PatientRecord[]>();
 
         for (const row of rows) {
-            const identityKey = row.getIdentityKey();
-            const existing = map.get(identityKey);
+            const baseKey = row.getIdentityKey();
+            let group = groupMap.get(baseKey);
 
-            if (existing && this.canMerge(existing.row, row)) {
-                const merged = existing.row.mergeWith(row);
-                result[existing.index] = merged;
-                map.set(identityKey, { row: merged, index: existing.index });
+            if (!group) {
+                group = [];
+                groupMap.set(baseKey, group);
+            }
+
+            if (row.hasChartNumber()) {
+                this.handleRowWithChartNumber(row, group);
             } else {
-                const index = result.length;
-                result.push(row);
-                map.set(identityKey, { row, index });
+                this.handleRowWithoutChartNumber(row, group);
             }
         }
 
-        return result;
+        return Array.from(groupMap.values()).flat();
     }
 
-    private isValid(row: PatientVO): boolean {
+    /**
+     * 차트번호가 있는 row 처리:
+     * 1) 동일한 차트번호를 가진 row가 있으면 해당 row와 병합
+     * 2) 없으면 그룹 내에 차트번호가 없는 row가 있다면 그 row와 병합
+     * 3) 둘 다 해당하지 않으면 새 항목으로 추가
+     */
+    private handleRowWithChartNumber(row: PatientRecord, group: PatientRecord[]): void {
+        const sameChartNumberRowIndex = group.findIndex(
+            existing => existing.chartNumber === row.chartNumber,
+        );
+        if (sameChartNumberRowIndex !== -1) {
+            group[sameChartNumberRowIndex] = group[sameChartNumberRowIndex].mergeWith(row);
+            return;
+        }
+
+        const noChartNumberRowIndex = group.findIndex(existing => !existing.hasChartNumber());
+        if (noChartNumberRowIndex !== -1) {
+            group[noChartNumberRowIndex] = group[noChartNumberRowIndex].mergeWith(row);
+            return;
+        }
+
+        group.push(row);
+    }
+
+    /**
+     * 차트번호가 없는 row 처리:
+     * 그룹 내 마지막 row와 병합하며, 그룹이 비어있으면 새로 추가
+     */
+    private handleRowWithoutChartNumber(row: PatientRecord, group: PatientRecord[]): void {
+        if (group.length > 0) {
+            const lastIndex = group.length - 1;
+            group[lastIndex] = group[lastIndex].mergeWith(row);
+        } else {
+            group.push(row);
+        }
+    }
+
+    private isValid(row: PatientRecord): boolean {
         return (
             this.isValidName(row.name) &&
             this.isValidPhoneNumber(row.phoneNumber) &&
@@ -75,8 +112,8 @@ export class ExcelParserService {
         );
     }
 
-    private clean(row: PatientVO): PatientVO {
-        return new PatientVO(
+    private clean(row: PatientRecord): PatientRecord {
+        return new PatientRecord(
             row.name.trim(),
             row.phoneNumber.replace(/-/g, ''),
             this.cleanIdentifyNumber(row.rrn),
@@ -117,7 +154,7 @@ export class ExcelParserService {
         return !value || value.length <= 255;
     }
 
-    private canMerge(upper: PatientVO, lower: PatientVO): boolean {
+    private canMerge(upper: PatientRecord, lower: PatientRecord): boolean {
         const upperHasChartNumber = upper.hasChartNumber();
         const lowerHasChartNumber = lower.hasChartNumber();
 
