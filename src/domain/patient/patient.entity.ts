@@ -5,7 +5,7 @@ import { BaseTimeEntity } from '@core/database/typeorm/base-time.entity';
 @Index(['name', 'phoneNumber', 'chartNumber'], { unique: true })
 export class PatientEntity extends BaseTimeEntity {
     @Column({ type: 'varchar', nullable: true, length: 255 })
-    chartNumber: string;
+    chartNumber?: string;
 
     @Column({ type: 'varchar', length: 255 })
     name: string;
