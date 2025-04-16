@@ -1,4 +1,4 @@
-import { PatientVO } from '../vo/patient.vo';
+import { PatientRecord } from '../../../domain/patient/patient-record';
 
 export type UploadExcelResult = {
     totalRows: number;
@@ -7,7 +7,7 @@ export type UploadExcelResult = {
 };
 
 export type ParseResult = {
-    validRows: PatientVO[];
+    validRows: PatientRecord[];
     totalRows: number;
     skippedRows: number;
     processedRows: number;

@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 
-export class ExcelUploadForm {
+export class UploadExcelDto {
     @ApiProperty({
         type: 'string',
         format: 'binary',
