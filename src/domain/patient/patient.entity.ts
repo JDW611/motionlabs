@@ -1,8 +1,7 @@
-import { Column, Entity, Index } from 'typeorm';
+import { Column, Entity, Index, Unique } from 'typeorm';
 import { BaseTimeEntity } from '@core/database/typeorm/base-time.entity';
 
 @Entity('patients')
-@Index(['name', 'phoneNumber', 'chartNumber'], { unique: true })
 export class PatientEntity extends BaseTimeEntity {
     @Column({ type: 'varchar', nullable: true, length: 255 })
     chartNumber?: string;
